@@ -1,0 +1,158 @@
+---
+title: "sample"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+kab<- kable(
+  dat,
+  col.names = c("File", "TimeFrame", "Prediction"),
+  align = c("l", "c", "c", "c", "c"),
+  digits = 2,
+  caption = "Model Prediction of Audio Anomaly"
+) 
+kab
+
+class(dat$prediction)
+dat_1 <- dat %>%
+  mutate(prediction_class = case_when(prediction == "[0]" ~ 0,
+                                prediction == "[1]" ~ 1,
+                                prediction == "[2]" ~ 2))
+dat_1 %>%
+  ggplot(aes(x = starttime, y = prediction, color = as.factor(prediction_class), size = 5)) +
+  geom_point() +
+  ggtitle("Model Predictions") +
+  xlab("Time Points") +
+  ylab("Prediction") +
+  theme_minimal() +
+  scale_color_manual(values=c("#00BA38", "#619CFF", "#F8766D")) +
+  theme(legend.position = "none")
+  
+  
+
+plot2<- dat2 %>%
+  ggplot(aes(x = start, y = end)) +
+  geom_point() 
+
+
+
+## some fancy ggplot which shows the wav form
+fin = '/Users/katwilson/Desktop/iHeart/hackathon/shinyappF2/data/pred_kegl-1.wav'
+
+wave<- fin
+wav <- readWave(wave) 
+
+ss <- spectro(wav, plot = F)
+
+mm <- melt(ss$amp) %>%
+  dplyr::select(FrequencyIndex = Var1, TimeIndex = Var2, Amplitude = value)
+
+ff <- melt(ss$freq) %>%
+  dplyr::mutate(Frequency = value, FrequencyIndex = row_number(), Frequency = Frequency * 1000)
+
+tt <- melt(ss$time) %>%
+  dplyr::mutate(Time = value, TimeIndex = row_number())
+
+sp <- mm %>%
+  dplyr::left_join(ff, by = "FrequencyIndex") %>%
+  dplyr::left_join(tt, by = "TimeIndex") %>%
+  dplyr::select(Time, Frequency, Amplitude)
+
+
+pop <-  sp %>% mutate(Freq.pop = Frequency, Amp.pop = Amplitude) %>%
+  dplyr::select(-c(Amplitude, Frequency))
+
+plotA<- ggplot(data = pop, mapping = aes(x = Time, y = Amp.pop)) +
+  geom_line(color = '#00BA38') +
+  labs(x = "time (s)", y = "amplitude", title = 'Sound Waveform') +
+  theme(plot.title = element_text(hjust = 0.5))
+plotA
+
+
+rects <- dat_1 %>%
+  mutate(start = ifelse(prediction_class == 1, starttime, 0),
+         end = ifelse(prediction_class == 1, lead(starttime), 0))  %>%
+  select(c(start, end)) 
+rects2 <- dat_1 %>%
+  mutate(start = ifelse(prediction_class == 2, starttime, 0),
+         end = ifelse(prediction_class == 2, lead(starttime), 0))  %>%
+  select(c(start, end)) 
+plotA <- plotA +
+  geom_rect(data=rects, inherit.aes=FALSE, aes(xmin=start, xmax=end, ymin=min(-200),
+                                               ymax=max(5)), color="transparent", fill="#F8766D", alpha=0.5) +
+  geom_rect(data=rects2, inherit.aes=FALSE, aes(xmin=start, xmax=end, ymin=min(-200),
+                                               ymax=max(5)), color="transparent", fill="#619CFF", alpha=0.5) +
+  theme_minimal() +
+  labs(subtitle = 'Predicted Anomalies Highlighted in Red and Green')
+
+ggsave(filename = '/Users/katwilson/Desktop/iHeart/hackathon/shinyappF2/Rplot1.png', plot = plotA)
+library(png)
+plot<- readPNG('/Users/katwilson/Desktop/iHeart/hackathon/shinyappF2/Rplot1.png')
+print(plot)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+
+
+## some fancy ggplot which shows the wav form
+fin = '/Users/katwilson/Desktop/iHeart/hackathon/shinyappF4/data/silencedintervals.wav'
+
+wave<- fin
+wav <- readWave(wave) 
+
+ss <- spectro(wav, plot = F)
+
+mm <- melt(ss$amp) %>%
+  dplyr::select(FrequencyIndex = Var1, TimeIndex = Var2, Amplitude = value)
+
+ff <- melt(ss$freq) %>%
+  dplyr::mutate(Frequency = value, FrequencyIndex = row_number(), Frequency = Frequency * 1000)
+
+tt <- melt(ss$time) %>%
+  dplyr::mutate(Time = value, TimeIndex = row_number())
+
+sp <- mm %>%
+  dplyr::left_join(ff, by = "FrequencyIndex") %>%
+  dplyr::left_join(tt, by = "TimeIndex") %>%
+  dplyr::select(Time, Frequency, Amplitude)
+
+
+pop <-  sp %>% mutate(Freq.pop = Frequency, Amp.pop = Amplitude) %>%
+  dplyr::select(-c(Amplitude, Frequency))
+
+plotA<- ggplot(data = pop, mapping = aes(x = Time, y = Amp.pop)) +
+  geom_line(color = '#00BA38') +
+  labs(x = "time (s)", y = "amplitude", title = 'Sound Waveform') +
+  theme(plot.title = element_text(hjust = 0.5))
+plotA
+
+
+start_vector <- dat2$start
+end_vector <- dat2$end
+plotB <- plotA +
+  geom_vline(xintercept = c(11.8, 24.8, 47.3, 60.3, 68.0), color = "blue") +
+  geom_vline(xintercept = c(22.2, 35.3, 57.9, 67.5, 78.5), color = "red") +
+  theme_minimal() +
+  labs(subtitle = 'Silence Starting and Stopping Times')
+
+ggsave(filename = '/Users/katwilson/Desktop/iHeart/hackathon/shinyappF4/www/Rplot2.png', plot = plotB)
+library(png)
+plot<- readPNG('/Users/katwilson/Desktop/iHeart/hackathon/shinyappF2/Rplot1.png')
+print(plot)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

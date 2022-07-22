@@ -1,14 +1,10 @@
+# source_python('/Users/katwilson/Desktop/iHeart/hackathon/shinyappF2/python_ref.py')
 curr_dir = getwd()
-source_python(paste(curr_dir,"/python_ref.py", sep=""))
-
 dat<-read_csv(paste(curr_dir,"/pred.csv",sep=""))
 dat2<-read_csv(paste(curr_dir,"/silenceidx.csv",sep=""))
 
 setwd('..')
-dir_one_above <- getwd()
-fin = paste(dir_one_above,'/data/audio/KDGE_2_glitch_SNR-6.wav',sep="")
-fin2 = paste(dir_one_above, '/data/audio/KDGE_2_glitch_SNR-6.wav', sep="")
-
+dir_one_above = getwd()
 
 ### function 0: hear the sound ## go button 0
 function0 <- function(var) {
@@ -64,10 +60,10 @@ kab
 
 kab2<- kable(
   dat2,
-  col.names = c("File", "TimeFrame", "Prediction"),
+  col.names = c("Silence", "Start", "End"),
   align = c("l", "c", "c", "c", "c"),
   digits = 2,
-  caption = "Model Prediction of Audio Anomaly"
+  caption = "Model Prediction of Silence"
 ) 
 function2 <- function(x) {
   
@@ -80,20 +76,32 @@ function2 <- function(x) {
 ### function 3: show the predictions # go with button 3
 
 
-plot1<- dat %>%
-  ggplot(aes(x = starttime, y = prediction, size = 5)) +
+dat_1 <- dat %>%
+  mutate(prediction_class = case_when(prediction == "[0]" ~ 0,
+                                      prediction == "[1]" ~ 1,
+                                      prediction == "[2]" ~ 2))
+plot1<- dat_1 %>%
+  ggplot(aes(x = starttime, y = prediction, color = as.factor(prediction_class), size = 5)) +
   geom_point() +
   ggtitle("Model Predictions") +
   xlab("Time Points") +
   ylab("Prediction") +
-  theme_minimal() 
+  theme_minimal() +
+  scale_color_manual(values=c("#00BA38", "#619CFF", "#F8766D")) +
+  theme(legend.position = "none")
 
 plot2<- dat2 %>%
   ggplot(aes(x = start, y = end)) +
   geom_point() 
 
 function3 <- function(x) {
-    ifelse(x==5,print(plot1), print(plot2))
+  ifelse(x==5,print(plot1), print(plot2))
+  
+}
+
+
+function4 <- function(x) {
+    ifelse(x==5,'Rplot1.png', 'Rplot2.png')
     
 }
 
@@ -101,98 +109,6 @@ function3 <- function(x) {
 
 
 
-### function 4: show the original waveform # go with button 4
-
-## some fancy ggplot which shows the wav form
-fin = paste(dir_one_above,'/data/audio/pred_kegl-1.wav',sep="")
-
-wave<- fin
-wav <- readWave(wave) 
-
-ss <- spectro(wav, plot = F)
-
-mm <- melt(ss$amp) %>%
-  dplyr::select(FrequencyIndex = Var1, TimeIndex = Var2, Amplitude = value)
-
-ff <- melt(ss$freq) %>%
-  dplyr::mutate(Frequency = value, FrequencyIndex = row_number(), Frequency = Frequency * 1000)
-
-tt <- melt(ss$time) %>%
-  dplyr::mutate(Time = value, TimeIndex = row_number())
-
-sp <- mm %>%
-  dplyr::left_join(ff, by = "FrequencyIndex") %>%
-  dplyr::left_join(tt, by = "TimeIndex") %>%
-  dplyr::select(Time, Frequency, Amplitude)
-
-
-pop <-  sp %>% mutate(Freq.pop = Frequency, Amp.pop = Amplitude) %>%
-  dplyr::select(-c(Amplitude, Frequency))
-
-plot<- ggplot(data = pop, mapping = aes(x = Time, y = Amp.pop)) +
-  geom_line(color = 'blue') +
-  labs(x = "time (s)", y = "amplitude", title = 'Sound Waveform') +
-  theme(plot.title = element_text(hjust = 0.5))
-
-dat%>%
-  mutate(predicted = ifelse(prediction > 0, 1,0)) %>%
-  mutate(start = ifelse(prediction > 0, starttime, 0),
-         end = ifelse(prediction > 0, lead(starttime), 0))  %>%
-  select(c(start, end)) -> rects
-plot1 <- plot +
-  geom_rect(data=rects, inherit.aes=FALSE, aes(xmin=start, xmax=end, ymin=min(-200),
-                                               ymax=max(5)), color="transparent", fill="red", alpha=0.5) +
-  theme_minimal() +
-  labs(subtitle = 'Predicted Anomalies Highlighted in Red')
-
-
-## some fancy ggplot which shows the wav form
-fin = paste(dir_one_above,'/data/audio/silencedintervals.wav',sep="")
-
-wave<- fin
-wav <- readWave(wave) 
-
-ss <- spectro(wav, plot = F)
-
-mm <- melt(ss$amp) %>%
-  dplyr::select(FrequencyIndex = Var1, TimeIndex = Var2, Amplitude = value)
-
-ff <- melt(ss$freq) %>%
-  dplyr::mutate(Frequency = value, FrequencyIndex = row_number(), Frequency = Frequency * 1000)
-
-tt <- melt(ss$time) %>%
-  dplyr::mutate(Time = value, TimeIndex = row_number())
-
-sp <- mm %>%
-  dplyr::left_join(ff, by = "FrequencyIndex") %>%
-  dplyr::left_join(tt, by = "TimeIndex") %>%
-  dplyr::select(Time, Frequency, Amplitude)
-
-
-pop <-  sp %>% mutate(Freq.pop = Frequency, Amp.pop = Amplitude) %>%
-  dplyr::select(-c(Amplitude, Frequency))
-
-plot<- ggplot(data = pop, mapping = aes(x = Time, y = Amp.pop)) +
-  geom_line(color = 'blue') +
-  labs(x = "time (s)", y = "amplitude", title = 'Sound Waveform') +
-  theme(plot.title = element_text(hjust = 0.5))
-
-dat %>%
-  mutate(predicted = ifelse(prediction > 0, 1,0)) %>%
-  mutate(start = ifelse(prediction > 0, starttime, 0),
-         end = ifelse(prediction > 0, lead(starttime), 0))  %>%
-  select(c(start, end)) -> rects
-plot2 <- plot +
-  geom_rect(data=rects, inherit.aes=FALSE, aes(xmin=start, xmax=end, ymin=min(-200),
-                                               ymax=max(5)), color="transparent", fill="red", alpha=0.5) +
-  theme_minimal() +
-  labs(subtitle = 'Predicted Anomalies Highlighted in Red')
-
-function4 <- function(x) {
- 
-  ifelse(x==5,print(plot1), print(plot2))
-  
-}
 
 
 

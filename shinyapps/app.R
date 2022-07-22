@@ -10,11 +10,11 @@ library(cowplot)
 library(dplyr)
 library(seewave)
 library(reshape2)
-library(findpython)
+#library(findpython)
 
-py_dir <- find_python_cmd(minimum_version='3.0', maximum_version = '3.8')
-Sys.setenv(RETICULATE_PYTHON=py_dir)
-library(reticulate)
+#py_dir <- find_python_cmd(minimum_version='3.0', maximum_version = '3.8')
+#Sys.setenv(RETICULATE_PYTHON=py_dir)
+#library(reticulate)
 
 library(kableExtra)
 source('helpers.R')
@@ -49,7 +49,7 @@ ui <- fluidPage(
     )
     )
 )
-library(reticulate)
+#library(reticulate)
 
 
 ## Server
